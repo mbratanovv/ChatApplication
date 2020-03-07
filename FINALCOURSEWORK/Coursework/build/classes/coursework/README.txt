@@ -6,9 +6,15 @@ Jordan Trinder - 000978834
 Jack McCabe - 001034199
 
 TO DO:
-Mario - change all variable names, change the code and classes (Friday)
-      - try to make the coordinator functionality and add : username, port number and ip for each port and IP of the server to login??? (Friday, Saturday)
+Mario :
+      - try to make the coordinator functionality 
+      - change the whole structure of the code (50%)
+      - make the code in MVC format (sunday)
 Jordan - get familiarised with the code and how it works and all the classes (Thursday)
-       - give your ideas here about the coordinator
+       - Handle creation of the coordinator and assigning coordinator rolesss
 
-Sunday - check the whole code and have it finalised by Monday evening !!!!!
+WHAT's DONE : 
+- changed the structure of the code (50%)
+- changed methods and names
+- added username for each member
+- the IP is not default, but added method to get the IP address of the current machine

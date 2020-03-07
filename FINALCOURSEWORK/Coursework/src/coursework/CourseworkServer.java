@@ -15,19 +15,25 @@ import java.util.*;
 
 public class CourseworkServer {
 
-    // ID for each member
-    private static int clientID;
-    // an ArrarrayList<ClientThread> al;
-    // instyList to keep the list of the Client
+    private static int clientID; // ID for each member
     private ArrayList<ClientThread> arrayOfThreads;
-    // instance of ServerGUI 
-//    private ServerGUI sg;
-    // for displaying the date 
     private SimpleDateFormat dateFormat;
-    // port variable for the server
     private int port;
     private boolean state; // state of the server (on/off)
 
+    //<editor-fold defaultstate="collapsed" desc="main Method">
+    public static void main(String[] args) {
+        int portNumber = 7777;
+        try {
+            InetAddress IPAddress = InetAddress.getLocalHost();
+            System.out.println("The default IP Address for this server is: " + "[" + IPAddress + "]");
+        } catch (UnknownHostException uhe) {
+            System.out.println("Cannot identify local host address" + uhe);
+        } 
+        CourseworkServer server = new CourseworkServer(portNumber);
+        server.serverStart();
+    }
+//</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="Server constructors">
 // server constructor that will receive the port for connection in the console
@@ -36,28 +42,22 @@ public class CourseworkServer {
         dateFormat = new SimpleDateFormat("HH:mm:ss"); 
         arrayOfThreads = new ArrayList<>(); 
     }
-    
-    // server constructor with two parameters : port and the user interface
-//    public Server(int port, ServerGUI sg) {
-//        this.port = port;
-//        
-//    }
 //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="start Method">
-    public void start() {
+    public void serverStart() {
         state = true;
         try {
             ServerSocket serverSocket = new ServerSocket(port); // new server with port
             while (state) { // waiting for connection
-                display("The chat is open and waiting for its members on port: " + port + "."); // opening message
+                serverMessages("The webchat is now online and is waiting for its members on port: " + "[" + port + "]"); // opening message
                 Socket socket = serverSocket.accept(); // accept connection
                 if (!state) { // if server stopped - break from the loop and continue down
                     break;
                 }
                 ClientThread clientThreadInstance = new ClientThread(socket);  // new thread of it
-                arrayOfThreads.add(clientThreadInstance); // save it in the Array
-                clientThreadInstance.start(); // run the client 
+                arrayOfThreads.add(clientThreadInstance); // save it in the arraylist
+                clientThreadInstance.start(); // run the client code
             }
             try { // to close the server
                 serverSocket.close(); // close the server
@@ -68,16 +68,16 @@ public class CourseworkServer {
                         tc.input.close();
                         tc.output.close();
                         tc.socket.close();
-                    } catch (IOException ioE) {
-                        // add a message here!
+                    } catch (IOException ioe) {
+                        System.out.println("Cannot close the input/output streams with exception: " + ioe);
                     }
                 }
             } catch (Exception e) {
-                display("The chat had to be closed due to unforseen exception: " + e);
+                serverMessages("The chat had to be closed due to unforseen exception: " + e);
             }
         } catch (IOException e) {
             String msg = dateFormat.format(new Date()) + " The chat was closed due to exception: " + e + "\n";
-            display(msg);
+            serverMessages(msg);
         }
     }
 //</editor-fold>
@@ -85,8 +85,6 @@ public class CourseworkServer {
     //<editor-fold defaultstate="collapsed" desc="stop Method">
     protected void stop() { //when the user interface stops
         state = false;
-        // connect to myself as Client to exit statement
-        // Socket socket = serverSocket.accept();
         try {
             Socket socket = new Socket("localhost", port);
         } catch (Exception e) {
@@ -95,32 +93,23 @@ public class CourseworkServer {
     }
 //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="display Method">
-    private void display(String message) { // method to display all the event messages
-        String fullmessage = dateFormat.format(new Date()) + " " + message;
-//        if (sg == null) {
+    //<editor-fold defaultstate="collapsed" desc="serverMessage Method">
+    private void serverMessages(String message) { // method to broadcast the server messages
+        String fullmessage = dateFormat.format(new Date()) + " > " + message;
             System.out.println(fullmessage);
-//        } else {
-//            sg.appendEvent(time + "\n");
-//        }
     }
 //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="broadcast Method">
-    private synchronized void broadcast(String message) { // to send each message to all clients
-        String time = dateFormat.format(new Date());
-        String messageFinal = time + " " + message + "\n"; // actual message sent + the date
-        // if the gui is not present - write the message in the console, else append the message to all the text boxes in the user's windows
-//        if (sg == null) {
+    private synchronized void broadcastMessage(String message) { // to send each message to all clients
+//        String time = dateFormat.format(new Date());
+        String messageFinal = dateFormat.format(new Date())  + " " + message + "\n"; // actual message sent + the date
             System.out.print(messageFinal);
-//        } else {
-//            sg.appendRoom(messageLf);
-//        }
         for (int i = arrayOfThreads.size(); --i >= 0;) {// reverse loop to check if we need to remove a disconnected user
             ClientThread clientThreadInstance = arrayOfThreads.get(i);
             if (!clientThreadInstance.writeMsg(messageFinal)) { // try to "ping" the user - if he can't get the message - delete him from the list of users
                 arrayOfThreads.remove(i);
-                display("The user [" + clientThreadInstance.username + "]" + " is disconnected and has been removed from the user list.");
+                serverMessages("The user [" + clientThreadInstance.username + "]" + " is disconnected and has been removed from the user list.");
             }
         }
     }
@@ -135,14 +124,6 @@ public class CourseworkServer {
                 return;
             }
         }
-    }
-//</editor-fold>
-
-    //<editor-fold defaultstate="collapsed" desc="main Method">
-    public static void main(String[] args) {
-        int portNumber = 7777;
-        CourseworkServer server = new CourseworkServer(portNumber);
-        server.start();
     }
 //</editor-fold>
 
@@ -166,12 +147,12 @@ public class CourseworkServer {
                 output = new ObjectOutputStream(socket.getOutputStream());
                 input = new ObjectInputStream(socket.getInputStream());
                 username = (String) input.readObject(); // read the username
-                display(username + " has just connected to the chat.");
+                serverMessages(username + " has just connected to the chat.");
             } catch (IOException e) {
-                display("Exception creating new data streams: " + e);
+                serverMessages("Exception creating new data streams: " + e);
                 return;
             } catch (ClassNotFoundException e) {
-                display("The class can't be found: " + e);
+                serverMessages("The class can't be found: " + e);
             }
             date = new Date().toString() + "\n";
         }
@@ -185,7 +166,7 @@ public class CourseworkServer {
                 try { // try to read the message which is an object of string
                     consoleMessage = (ConsoleMessage) input.readObject();
                 } catch (IOException IOE) {
-                    display(username + "Exception reading data streams: " + IOE);
+                    serverMessages(username + "Exception reading data streams: " + IOE);
                     break;
                 } catch (ClassNotFoundException CNFE) {
                     break;
@@ -195,10 +176,10 @@ public class CourseworkServer {
                 // Switch on the type of message receive
                 switch (consoleMessage.getType()) {
                     case ConsoleMessage.stringMessage:
-                        broadcast(username + ": " + message);
+                        broadcastMessage(username + ": " + message);
                         break;
                     case ConsoleMessage.logout:
-                        display(username + " disconnected from the chat.");
+                        serverMessages(username + " disconnected from the chat.");
                         state = false;
                         break;
                     case ConsoleMessage.online:
@@ -249,8 +230,8 @@ public class CourseworkServer {
             try { // try sending message to the outputstream
                 output.writeObject(message);
             } catch (IOException e) { // if impossible - display error message
-                display("There is an error trying to communicate with " + username);
-                display(e.toString());
+                serverMessages("There is an error trying to communicate with " + username);
+                serverMessages(e.toString());
             }
             return true;
         }
