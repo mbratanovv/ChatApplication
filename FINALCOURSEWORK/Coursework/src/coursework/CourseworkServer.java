@@ -165,10 +165,10 @@ public class CourseworkServer {
             while (state) { // while loop to run while boolean = true
                 try { // try to read the message which is an object of string
                     consoleMessage = (ConsoleMessage) input.readObject();
-                } catch (IOException IOE) {
-                    serverMessages(username + "Exception reading data streams: " + IOE);
+                } catch (IOException ioe) {
+                    serverMessages(username + "Exception reading data streams: " + ioe);
                     break;
-                } catch (ClassNotFoundException CNFE) {
+                } catch (ClassNotFoundException cnfe) {
                     break;
                 }
                 String message = consoleMessage.getMessage();
@@ -178,16 +178,23 @@ public class CourseworkServer {
                     case ConsoleMessage.stringMessage:
                         broadcastMessage(username + ": " + message);
                         break;
+                    case ConsoleMessage.commands:
+                        writeMsg("LIST OF ALL COMMANDS:");
+                        writeMsg("1. 'commandlist' - to check the list of commands ");
+                        writeMsg("2. 'logout' - to disconnect from the chat ");
+                        writeMsg("3. 'online' - to check who is currently online in the server ");
+                        writeMsg("4. 'coordinator' - to check who is the coordinator (TO DO) ");
+                        writeMsg("5. 'ping' - to ping the coordinator to check if he is online (TO DO) ");
+                        break;
                     case ConsoleMessage.logout:
                         serverMessages(username + " disconnected from the chat.");
                         state = false;
                         break;
                     case ConsoleMessage.online:
                         writeMsg("List of all users currently online at " + "[" + dateFormat.format(new Date()) + "]" + "\n");
-                        // scan al the users connected
-                        for (int i = 0; i < arrayOfThreads.size(); ++i) {
-                            ClientThread ct = arrayOfThreads.get(i);
-                            writeMsg((i + 1) + ". " + ct.username + " - " + "logged in at: " + ct.date);
+                        for (int i = 0; i < arrayOfThreads.size(); ++i) { // loop through the array of online members
+                            ClientThread clientThread = arrayOfThreads.get(i);
+                            writeMsg((i + 1) + ". " + clientThread.username + " - " + "logged in at: " + clientThread.date);
                         }
                         break;
                 }
@@ -222,7 +229,6 @@ public class CourseworkServer {
 
         //<editor-fold defaultstate="collapsed" desc="writeMsg Method">
         private boolean writeMsg(String message) {
-            // if Client is still connected send the message to it
             if (!socket.isConnected()) {
                 close();
                 return false;

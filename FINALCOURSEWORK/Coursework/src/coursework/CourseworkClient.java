@@ -22,9 +22,6 @@ public class CourseworkClient  {
     
     //<editor-fold defaultstate="collapsed" desc="main Method">
     public static void main(String[] args) throws IOException {
-        // M.B - to add details for login : port number of the server and automatically display details of each member that logs in
-        // the default IP and port Number of the server will be displayed when the server is started :
-        // the welcoming message is already there, but must add InetAddress functionality and to display both default IP insted of localhost and portnumber
         int portNumber = 7777;
         try {
             InetAddress IPAddress = InetAddress.getLocalHost();
@@ -32,30 +29,28 @@ public class CourseworkClient  {
         } catch (UnknownHostException uhe) {
             System.out.println("Cannot identify local host address" + uhe);
         }
+        
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Enter your username: ");
         String[] consoleValues = bufferedReader.readLine().split(" ");
         String IPAddress = null;
         CourseworkClient client = new CourseworkClient(IPAddress, portNumber, consoleValues[0]);
-        if (!client.start()) {
+        if (!client.clientStart()) {
             return;
         }
-        
-        // M.B - change from scanner to bufferedreader to read the input messages
+        System.out.println("The view the command list for this network type: 'commandlist' ");
         Scanner scanner = new Scanner(System.in); // wait for messages from user
-        //BufferedReader bufferedReader = new BufferedReader(input);
-        //<editor-fold defaultstate="collapsed" desc="to change this loop (update)">
         while (true) { // loop to determine the messages coming from each user
             System.out.print("> ");
             String message = scanner.nextLine();
-            // M.B - to change the statement to switch/case or change the if statements and add more (empty string)
-            if (message.equalsIgnoreCase("logoutMessage")) {
+            if (message.equalsIgnoreCase("logout")) {
                 client.sendMessage(new ConsoleMessage(ConsoleMessage.logout, ""));
                 break;
-            }
-            else if (message.equalsIgnoreCase("online")) {
+            }else if (message.equalsIgnoreCase("online")) {
                 client.sendMessage(new ConsoleMessage(ConsoleMessage.online, ""));
-            } else {
+            }else if(message.equalsIgnoreCase("commandlist")) {
+                client.sendMessage(new ConsoleMessage(ConsoleMessage.commands, ""));
+            }else {
                 client.sendMessage(new ConsoleMessage(ConsoleMessage.stringMessage, message));
             }
         }
@@ -64,14 +59,14 @@ public class CourseworkClient  {
 //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="start Method">
-    public boolean start() throws UnknownHostException {
+    public boolean clientStart() throws UnknownHostException {
         try {
             socket = new Socket(server, port);
         }
         catch (Exception ex) {
             outputMessage("There is an error connectiong to server: " + ex);
-            return false; // couldn't connect to the server
-        } // getInetAddress returns the remote IP address to which the socket is connected, or null if it is not connected
+            return false; 
+        }
         String msg = "Connection accepted on port: " + "[" + socket.getPort() + "]"; 
         outputMessage(msg);
         
@@ -80,12 +75,12 @@ public class CourseworkClient  {
             output = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException eio) {
             outputMessage("Exception in creating new Input/Output streams: " + eio);
-            return false; // couldn't create them
+            return false; 
         }
         //<editor-fold defaultstate="collapsed" desc="Login process">
         new CourseworkServerListenerThread().start(); // creates the Thread to listen from the server from the ListenFromServer class
         try {
-            output.writeObject(username); // sending our username to the server as a String
+            output.writeObject(username); 
         } catch (IOException eio) {
             outputMessage("Exception while logging in: " + eio);
             disconnect();
@@ -97,7 +92,7 @@ public class CourseworkClient  {
 //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="outputMessage Method">
-    private void outputMessage(String message) { // to output a message in the console
+    void outputMessage(String message) { // to output a message in the console
             System.out.println(message);
     }
 //</editor-fold>
