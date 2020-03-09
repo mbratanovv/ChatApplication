@@ -80,7 +80,7 @@ public class CourseworkClient  {
             return false; 
         }
         //<editor-fold defaultstate="collapsed" desc="Login process">
-        new CourseworkServerListenerThread().start(); // creates the Thread to listen from the server from the ListenFromServer class
+        new CourseworkServerThread().start(); // creates the Thread to listen from the server from the ListenFromServer class
         try {
             output.writeObject(username); 
         } catch (IOException eio) {
@@ -132,7 +132,7 @@ public class CourseworkClient  {
     }
 //</editor-fold>
 
-    class CourseworkServerListenerThread extends Thread { // M.B - decide if to keep the class or no : class used to print messages from server to clients ?
+    class CourseworkServerThread extends Thread { // M.B - decide if to keep the class or no : class used to print messages from server to clients ?
 
         @Override
         public void run() {

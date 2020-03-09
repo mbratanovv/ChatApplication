@@ -175,7 +175,7 @@ public class CourseworkServer {
                 
                 if (arrayOfThreads.get(0).coordinatorRole == false) {
                     arrayOfThreads.get(0).coordinatorRole = true;
-                    serverMessages (arrayOfThreads.get(0).username + "set as new coordinator with id: " + arrayOfThreads.get(0).id);
+                    serverMessages (arrayOfThreads.get(0).username + " set as new coordinator with id: " + arrayOfThreads.get(0).id);
                 }  
                 
                 String message = consoleMessage.getMessage();
@@ -198,10 +198,14 @@ public class CourseworkServer {
                         state = false;
                         break;
                     case ConsoleMessage.online:
-                        writeMsg("List of all users currently online at " + "[" + dateFormat.format(new Date()) + "]" + "\n");
-                        for (int i = 0; i < arrayOfThreads.size(); ++i) { // loop through the array of online members
-                            ClientThread clientThread = arrayOfThreads.get(i);
-                            writeMsg((i + 1) + ". " + clientThread.username + " - " + "logged in at: " + clientThread.date);
+                        if (coordinatorRole == true) {
+                            writeMsg("List of all users currently online at " + "[" + dateFormat.format(new Date()) + "]" + "\n");
+                            for (int i = 0; i < arrayOfThreads.size(); ++i) { // loop through the array of online members
+                                ClientThread clientThread = arrayOfThreads.get(i);
+                                writeMsg((i + 1) + ". " + clientThread.username + " - " + "logged in at: " + clientThread.date);
+                            }
+                        } else {
+                            writeMsg("You must be the coordinator to use this command, current coordinator is " + arrayOfThreads.get(0).username);
                         }
                         break;
                     case ConsoleMessage.coordinator:
@@ -216,6 +220,8 @@ public class CourseworkServer {
             remove(id);
             if (coordinatorRole == true) {
                 coordinatorRole = false;
+                arrayOfThreads.get(0).coordinatorRole = true;
+                serverMessages (arrayOfThreads.get(0).username + " set as new coordinator with id: " + arrayOfThreads.get(0).id);
             }
             close();
         }
