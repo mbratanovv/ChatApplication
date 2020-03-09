@@ -148,6 +148,13 @@ public class CourseworkServer {
                 output = new ObjectOutputStream(socket.getOutputStream());
                 input = new ObjectInputStream(socket.getInputStream());
                 username = (String) input.readObject(); // read the username
+                for (int i = 0; i < arrayOfThreads.size(); ++i) {
+                    if (arrayOfThreads.get(i).username.equals(username)) {
+                        username = (username + id);
+                        writeMsg("Username automatically changed as not unique, new username is : " + username);
+                        serverMessages(username + " has had username changed.");
+                    }
+                }
                 serverMessages(username + " has just connected to the chat.");
             } catch (IOException e) {
                 serverMessages("Exception creating new data streams: " + e);
@@ -191,7 +198,6 @@ public class CourseworkServer {
                         writeMsg("2. 'logout' - to disconnect from the chat ");
                         writeMsg("3. 'online' - to check who is currently online in the server ");
                         writeMsg("4. 'coordinator' - to check who is the coordinator");
-                        writeMsg("5. 'ping' - to ping the coordinator to check if he is onlin");
                         break;
                     case ConsoleMessage.logout:
                         serverMessages(username + " disconnected from the chat.");
