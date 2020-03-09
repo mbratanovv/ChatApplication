@@ -38,7 +38,7 @@ public class CourseworkClient  {
         if (!client.clientStart()) {
             return;
         }
-        System.out.println("The view the command list for this network type: 'commandlist' ");
+        System.out.println("To view the command list for this network type: 'commandlist' ");
         Scanner scanner = new Scanner(System.in); // wait for messages from user
         while (true) { // loop to determine the messages coming from each user
             System.out.print("> ");
