@@ -21,6 +21,15 @@ public class CourseworkServer {
     private int port;
     private boolean state; // state of the server (on/off)
 
+    //<editor-fold defaultstate="collapsed" desc="Server constructors">
+// server constructor that will receive the port for connection in the console
+    public CourseworkServer(int port) {
+        this.port = port;
+        dateFormat = new SimpleDateFormat("HH:mm:ss"); 
+        arrayOfThreads = new ArrayList<>(); 
+    }
+//</editor-fold>
+    
     //<editor-fold defaultstate="collapsed" desc="main Method">
     public static void main(String[] args) {
         int portNumber = 7777;
@@ -35,22 +44,13 @@ public class CourseworkServer {
     }
 //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="Server constructors">
-// server constructor that will receive the port for connection in the console
-    public CourseworkServer(int port) {
-        this.port = port;
-        dateFormat = new SimpleDateFormat("HH:mm:ss"); 
-        arrayOfThreads = new ArrayList<>(); 
-    }
-//</editor-fold>
-
-    //<editor-fold defaultstate="collapsed" desc="start Method">
+    //<editor-fold defaultstate="collapsed" desc="serverStart Method">
     public void serverStart() {
         state = true;
         try {
             ServerSocket serverSocket = new ServerSocket(port); // new server with port
+            serverMessages("The webchat is now online and is waiting for its members on port: " + "[" + port + "]"); // opening message
             while (state) { // waiting for connection
-                serverMessages("The webchat is now online and is waiting for its members on port: " + "[" + port + "]"); // opening message
                 Socket socket = serverSocket.accept(); // accept connection
                 if (!state) { // if server stopped - break from the loop and continue down
                     break;
@@ -62,12 +62,12 @@ public class CourseworkServer {
             try { // to close the server
                 serverSocket.close(); // close the server
                 for (int i = 0; i < arrayOfThreads.size(); ++i) {
-                    ClientThread tc = arrayOfThreads.get(i); // make a thread out of all members
+                    ClientThread clientThreadInstance = arrayOfThreads.get(i); // make a thread out of all members
                     try {
                         // close both streams and the socket
-                        tc.input.close();
-                        tc.output.close();
-                        tc.socket.close();
+                        clientThreadInstance.input.close();
+                        clientThreadInstance.output.close();
+                        clientThreadInstance.socket.close();
                     } catch (IOException ioe) {
                         System.out.println("Cannot close the input/output streams with exception: " + ioe);
                     }
@@ -75,20 +75,9 @@ public class CourseworkServer {
             } catch (Exception e) {
                 serverMessages("The chat had to be closed due to unforseen exception: " + e);
             }
-        } catch (IOException e) {
-            String msg = dateFormat.format(new Date()) + " The chat was closed due to exception: " + e + "\n";
-            serverMessages(msg);
-        }
-    }
-//</editor-fold>
-
-    //<editor-fold defaultstate="collapsed" desc="stop Method">
-    protected void stop() { //when the user interface stops
-        state = false;
-        try {
-            Socket socket = new Socket("localhost", port);
-        } catch (Exception e) {
-            // nothing I can really do
+        } catch (IOException ioe) {
+            String message = dateFormat.format(new Date()) + " The chat was closed due to exception: " + ioe + "\n";
+            serverMessages(message);
         }
     }
 //</editor-fold>
@@ -128,39 +117,39 @@ public class CourseworkServer {
 //</editor-fold>
 
 //<editor-fold defaultstate="collapsed" desc="ClientThread Class">
-    class ClientThread extends Thread { // make every user instance of this class as a thread
-
-        Socket socket;  // the socket which listens to the input/output streams
+    class ClientThread extends Thread { // Thread class for each client 
+        
         ObjectInputStream input;
         ObjectOutputStream output;
-        int id; // my unique id (easier for deconnection)
-        String username; // the username of the client
-        ConsoleMessage consoleMessage; // the only type of message each user will send will send
-        String date; // the date I connect
+        Socket socket; 
+        String date; 
+        String username; 
+        int id; 
+        ConsoleMessage consoleMessage; 
         Boolean coordinatorRole = false;
         
         //<editor-fold defaultstate="collapsed" desc="Constructor for ClientThread class">
         ClientThread(Socket socket) { // Constructor for the class
-            id = ++clientID;
+            id = clientID++;
             this.socket = socket;
             try {
                 // creating both streams of data (input/output)
                 output = new ObjectOutputStream(socket.getOutputStream());
                 input = new ObjectInputStream(socket.getInputStream());
                 username = (String) input.readObject(); // read the username
-                for (int i = 0; i < arrayOfThreads.size(); ++i) {
+                for (int i = 0; i < arrayOfThreads.size(); ++i) { // to check if username is unique
                     if (arrayOfThreads.get(i).username.equals(username)) {
                         username = (username + id);
-                        writeMsg("Username automatically changed as not unique, new username is : " + username);
+                        writeMsg("Username automatically changed as not unique, new username is: " + "[" + username + "]");
                         serverMessages(username + " has had username changed.");
                     }
                 }
                 serverMessages(username + " has just connected to the chat.");
-            } catch (IOException e) {
-                serverMessages("Exception creating new data streams: " + e);
+            } catch (IOException ioe) {
+                serverMessages("Exception creating new data streams: " + ioe);
                 return;
-            } catch (ClassNotFoundException e) {
-                serverMessages("The class can't be found: " + e);
+            } catch (ClassNotFoundException cnfe) {
+                serverMessages("The class can't be found: " + cnfe);
             }
             date = new Date().toString() + "\n";
         }
@@ -177,16 +166,14 @@ public class CourseworkServer {
                     serverMessages(username + "Exception reading data streams: " + ioe);
                     break;
                 } catch (ClassNotFoundException cnfe) {
+                    System.out.println("The class wasn't found: " + cnfe);
                     break;
                 }
-                
                 if (arrayOfThreads.get(0).coordinatorRole == false) {
                     arrayOfThreads.get(0).coordinatorRole = true;
                     serverMessages (arrayOfThreads.get(0).username + " set as new coordinator with id: " + arrayOfThreads.get(0).id);
                 }  
-                
                 String message = consoleMessage.getMessage();
-
                 // Switch on the type of message receive
                 switch (consoleMessage.getType()) {
                     case ConsoleMessage.stringMessage:
@@ -207,8 +194,8 @@ public class CourseworkServer {
                         if (coordinatorRole == true) {
                             writeMsg("List of all users currently online at " + "[" + dateFormat.format(new Date()) + "]" + "\n");
                             for (int i = 0; i < arrayOfThreads.size(); ++i) { // loop through the array of online members
-                                ClientThread clientThread = arrayOfThreads.get(i);
-                                writeMsg((i + 1) + ". " + clientThread.username + " - " + "logged in at: " + clientThread.date);
+                                ClientThread clientThreadInstance = arrayOfThreads.get(i);
+                                writeMsg((i + 1) + ". " + clientThreadInstance.username + " - " + "logged in at: " + clientThreadInstance.date);
                             }
                         } else {
                             writeMsg("You must be the coordinator to use this command, current coordinator is " + arrayOfThreads.get(0).username);
@@ -229,29 +216,32 @@ public class CourseworkServer {
                 arrayOfThreads.get(0).coordinatorRole = true;
                 serverMessages (arrayOfThreads.get(0).username + " set as new coordinator with id: " + arrayOfThreads.get(0).id);
             }
-            close();
+            clientDisconnect();
         }
 //</editor-fold>
 
-        //<editor-fold defaultstate="collapsed" desc="close Method">
-        private void close() { // closing both streams and socket
-            try {
-                if (output != null) {
-                    output.close();
-                }
-            } catch (Exception e) {
-            }
+        //<editor-fold defaultstate="collapsed" desc="clientDisconnect Method">
+        private void clientDisconnect() { // closing both streams and socket
             try {
                 if (input != null) {
                     input.close();
                 }
             } catch (Exception e) {
-            };
+                System.out.println("Input stream cannot be closed due to exception: " + e);
+            }
+            try {
+                if (output != null) {
+                    output.close();
+                }
+            } catch (Exception e) {
+                System.out.println("Output stream cannot be closed due to exception: " + e);
+            }
             try {
                 if (socket != null) {
                     socket.close();
                 }
             } catch (Exception e) {
+                System.out.println("Socket cannot be closed due to exception: " + e);
             }
         }
 //</editor-fold>
@@ -259,14 +249,14 @@ public class CourseworkServer {
         //<editor-fold defaultstate="collapsed" desc="writeMsg Method">
         private boolean writeMsg(String message) {
             if (!socket.isConnected()) {
-                close();
+                clientDisconnect();
                 return false;
             }
             try { // try sending message to the outputstream
                 output.writeObject(message);
-            } catch (IOException e) { // if impossible - display error message
+            } catch (IOException ioe) { // if impossible - display error message
                 serverMessages("There is an error trying to communicate with " + username);
-                serverMessages(e.toString());
+                serverMessages(ioe.toString());
             }
             return true;
         }

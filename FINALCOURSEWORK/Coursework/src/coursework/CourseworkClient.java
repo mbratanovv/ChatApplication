@@ -27,11 +27,11 @@ public class CourseworkClient  {
             InetAddress IPAddress = InetAddress.getLocalHost();
             System.out.println("The default IP Address for this server is: " + "[" + IPAddress + "]");
         } catch (UnknownHostException uhe) {
-            System.out.println("Cannot identify local host address" + uhe);
+            System.out.println("Cannot identify localhost address" + uhe);
         }
         
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Enter your username: ");
+        System.out.print("Enter your username: ");
         String[] consoleValues = bufferedReader.readLine().split(" ");
         String IPAddress = null;
         CourseworkClient client = new CourseworkClient(IPAddress, portNumber, consoleValues[0]);
@@ -44,52 +44,63 @@ public class CourseworkClient  {
             System.out.print("> ");
             String message = scanner.nextLine();
             if (message.equalsIgnoreCase("logout")) {
-                client.sendMessage(new ConsoleMessage(ConsoleMessage.logout, ""));
+                client.sendMessageToServer(new ConsoleMessage(ConsoleMessage.logout, ""));
                 break;
             }else if (message.equalsIgnoreCase("online")) {
-                client.sendMessage(new ConsoleMessage(ConsoleMessage.online, ""));
+                client.sendMessageToServer(new ConsoleMessage(ConsoleMessage.online, ""));
             }else if(message.equalsIgnoreCase("commandlist")) {
-                client.sendMessage(new ConsoleMessage(ConsoleMessage.commands, ""));
+                client.sendMessageToServer(new ConsoleMessage(ConsoleMessage.commands, ""));
             }else if(message.equalsIgnoreCase("coordinator")) {
-                client.sendMessage(new ConsoleMessage(ConsoleMessage.coordinator, ""));
+                client.sendMessageToServer(new ConsoleMessage(ConsoleMessage.coordinator, ""));
             }else {
-                client.sendMessage(new ConsoleMessage(ConsoleMessage.stringMessage, message));
+                client.sendMessageToServer(new ConsoleMessage(ConsoleMessage.stringMessage, message));
             }
         }
-        client.disconnect(); // to disconnect when the break statement is triggered (when a client wants to logout)
+        client.clientDisconnect(); // to disconnect when the break statement is triggered (when a client wants to logout)
     }
 //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="start Method">
+    //<editor-fold defaultstate="collapsed" desc="clientStart Method">
     public boolean clientStart() throws UnknownHostException {
         try {
             socket = new Socket(server, port);
         }
-        catch (Exception ex) {
-            outputMessage("There is an error connectiong to server: " + ex);
+        catch (Exception e) {
+            outputMessage("There is an error connectiong to server: " + e);
             return false; 
         }
-        String msg = "Connection accepted on port: " + "[" + socket.getPort() + "]"; 
-        outputMessage(msg);
+        String message = "The connection is accepted on port: " + "[" + socket.getPort() + "]"; 
+        outputMessage(message);
         
         try { //create both I/O streams
             input = new ObjectInputStream(socket.getInputStream());
             output = new ObjectOutputStream(socket.getOutputStream());
-        } catch (IOException eio) {
-            outputMessage("Exception in creating new Input/Output streams: " + eio);
+        } catch (IOException ioe) {
+            outputMessage("Exception in creating new Input/Output streams: " + ioe);
             return false; 
         }
         //<editor-fold defaultstate="collapsed" desc="Login process">
-        new CourseworkServerThread().start(); // creates the Thread to listen from the server from the ListenFromServer class
+        // for sending the initial username to the server
+        new CourseworkServerThread().start(); 
         try {
             output.writeObject(username); 
-        } catch (IOException eio) {
-            outputMessage("Exception while logging in: " + eio);
-            disconnect();
-            return false; // couldn't login
+        } catch (IOException ioe) {
+            outputMessage("Exception while logging in: " + ioe);
+            clientDisconnect();
+            return false; // cannot login
         }
 //</editor-fold>
         return true; // successfull
+    }
+//</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="sendMessageToServer Method">
+    void sendMessageToServer(ConsoleMessage message) { 
+        try {
+            output.writeObject(message);
+        } catch (IOException ioe) {
+            outputMessage("Exception occured when writing to the server: " + ioe);
+        }
     }
 //</editor-fold>
 
@@ -99,40 +110,33 @@ public class CourseworkClient  {
     }
 //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="sendMessage Method">
-    void sendMessage(ConsoleMessage message) { // To send a message to the server
-        try {
-            output.writeObject(message);
-        } catch (IOException e) {
-            outputMessage("Exception occured when writing to the server: " + e);
-        }
-    }
-//</editor-fold>
-
-    //<editor-fold defaultstate="collapsed" desc="disconnect Method">
-    private void disconnect() { // method to close both streams and disconnect in something occurs
+    //<editor-fold defaultstate="collapsed" desc="clientDisconnect Method">
+    private void clientDisconnect() { // method to close both streams and disconnect in something occurs
         try {
             if (input != null) {
                 input.close();
             }
         } catch (Exception e) {
+            System.out.println("Input stream cannot be closed due to exception: " + e);
         }
         try {
             if (output != null) {
                 output.close();
             }
         } catch (Exception e) {
+            System.out.println("Output stream cannot be closed due to exception: " + e);
         }
         try {
             if (socket != null) {
                 socket.close();
             }
         } catch (Exception e) {
+            System.out.println("Socket cannot be closed due to exception: " + e);
         }
     }
 //</editor-fold>
 
-    class CourseworkServerThread extends Thread { // M.B - decide if to keep the class or no : class used to print messages from server to clients ?
+    class CourseworkServerThread extends Thread { // thread class to listen to the server for messages and output it to console
 
         @Override
         public void run() {
@@ -146,6 +150,7 @@ public class CourseworkClient  {
                     break;
                 } 
                 catch (ClassNotFoundException cnfe) {
+                    System.out.println("The class wasn't found: " + cnfe);
                 }
             }
         }
