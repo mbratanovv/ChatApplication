@@ -57,7 +57,7 @@ public class CourseworkServer {
                 }
                 ClientThread clientThreadInstance = new ClientThread(socket);  // new thread of it
                 arrayOfThreads.add(clientThreadInstance); // save it in the arraylist
-                clientThreadInstance.start(); // run the client code
+                clientThreadInstance.start(); // run the client code           
             }
             try { // to close the server
                 serverSocket.close(); // close the server
@@ -137,7 +137,8 @@ public class CourseworkServer {
         String username; // the username of the client
         ConsoleMessage consoleMessage; // the only type of message each user will send will send
         String date; // the date I connect
-
+        Boolean coordinatorRole = false;
+        
         //<editor-fold defaultstate="collapsed" desc="Constructor for ClientThread class">
         ClientThread(Socket socket) { // Constructor for the class
             id = ++clientID;
@@ -171,6 +172,12 @@ public class CourseworkServer {
                 } catch (ClassNotFoundException cnfe) {
                     break;
                 }
+                
+                if (arrayOfThreads.get(0).coordinatorRole == false) {
+                    arrayOfThreads.get(0).coordinatorRole = true;
+                    serverMessages (arrayOfThreads.get(0).username + "set as new coordinator with id: " + arrayOfThreads.get(0).id);
+                }  
+                
                 String message = consoleMessage.getMessage();
 
                 // Switch on the type of message receive
@@ -183,8 +190,8 @@ public class CourseworkServer {
                         writeMsg("1. 'commandlist' - to check the list of commands ");
                         writeMsg("2. 'logout' - to disconnect from the chat ");
                         writeMsg("3. 'online' - to check who is currently online in the server ");
-                        writeMsg("4. 'coordinator' - to check who is the coordinator (TO DO) ");
-                        writeMsg("5. 'ping' - to ping the coordinator to check if he is online (TO DO) ");
+                        writeMsg("4. 'coordinator' - to check who is the coordinator");
+                        writeMsg("5. 'ping' - to ping the coordinator to check if he is onlin");
                         break;
                     case ConsoleMessage.logout:
                         serverMessages(username + " disconnected from the chat.");
@@ -197,9 +204,19 @@ public class CourseworkServer {
                             writeMsg((i + 1) + ". " + clientThread.username + " - " + "logged in at: " + clientThread.date);
                         }
                         break;
+                    case ConsoleMessage.coordinator:
+                        if (arrayOfThreads.get(0).coordinatorRole == true) {
+                            writeMsg("The Current Coordinator is: " + arrayOfThreads.get(0).username);
+                        } else {
+                            serverMessages("Error no current coordinator selected!");
+                        }
+                        break;
                 }
             }
             remove(id);
+            if (coordinatorRole == true) {
+                coordinatorRole = false;
+            }
             close();
         }
 //</editor-fold>

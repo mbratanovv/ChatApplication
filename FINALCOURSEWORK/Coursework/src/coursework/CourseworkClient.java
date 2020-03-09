@@ -50,6 +50,8 @@ public class CourseworkClient  {
                 client.sendMessage(new ConsoleMessage(ConsoleMessage.online, ""));
             }else if(message.equalsIgnoreCase("commandlist")) {
                 client.sendMessage(new ConsoleMessage(ConsoleMessage.commands, ""));
+            }else if(message.equalsIgnoreCase("coordinator")) {
+                client.sendMessage(new ConsoleMessage(ConsoleMessage.coordinator, ""));
             }else {
                 client.sendMessage(new ConsoleMessage(ConsoleMessage.stringMessage, message));
             }
